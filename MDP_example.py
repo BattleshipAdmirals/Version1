@@ -2,6 +2,7 @@ import math
 import random
 from IPython.display import clear_output
 import time
+import Battleship_MDP
 
 def validate_size(size: int):
     side_length = int(math.sqrt(size))
@@ -117,7 +118,8 @@ def random_ship_placement(ship_size: int, grid: list, ships_dict: dict):
                     grid[row][column+i] = ship_size
                     ship_list.append([(row,column+i),1])
             else:
-                continue 
+                continue
+        
 
     ships_dict.append([ship_list, 1])
     return grid, ships_dict
@@ -157,6 +159,7 @@ def play(grid_size, ships):
     shots = [0, 0]
     hits = [0, 0]
     turn = 0
+    battleship_mdp = Battleship_MDP.Battleship_MDP([grid1,grid2],ships,1)
     while shots[0] < max_shots and shots[1] < max_shots and hits[0] < hits_to_win and hits[1] < hits_to_win:
         clear_output(wait=True)
         current_shot = play_turn(grids, turn)
@@ -178,13 +181,20 @@ def play(grid_size, ships):
                             sunk[turn][index1][1] = 0
                 if i[1] == 0:
                     for l in i[0]:
-                        grids[turn][l[0][0]][l[0][1]] = '*'  
+                        grids[turn][l[0][0]][l[0][1]] = '*' 
+                    battleship_mdp.eliminate_ships()
+        battleship_mdp.update_board(grids[0])   
         shots[turn] = shots[turn] + 1
         if turn == 0:
             turn = 1
         else:
             turn = 0
-        time.sleep(1)
+        hit_tile = battleship_mdp.find_hit()
+        if hit_tile:
+            for i in range(len(ships)):
+                print(battleship_mdp.gen_ship_on_hit(hit_tile,ships[i]))
+        print_game(grids, shots, hits)
+        time.sleep(.2)
 grid_size = 10
 ships = [5, 4, 3, 3, 2]
 
