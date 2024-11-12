@@ -245,11 +245,10 @@ games = 10
 
 agent1=Random_Agent
 agent2=Improved_Random_Agent
-agent3=Knowledge_Based_Agent
 
 wins = np.array([0,0])
 while games > 0:
-    wins += play(grid_size, ships, agents=[agent1, agent3])
+    wins += play(grid_size, ships, agents=[agent1, agent2])
     games = games - 1
     
 print(wins)
