@@ -17,6 +17,17 @@ def rand_neighbor(tile,symbol,directions,size,board):
     #if none are valid, returns False
     return False
 
+def find_val(board,symbol): #return list of coordinates of the symbol
+        n = len(board)
+        hits = []
+        for i in range(n):
+            for j in range(n):
+                if board[i][j] == symbol:
+                    hits.append((i,j))
+        if hits:
+            return hits
+        return False
+
 def generate_blank(size):
         a='.'
         row = list(a * size)
@@ -52,4 +63,4 @@ def valid_tile(tile,size):
             if 0 <= tile[1] < size:
                 return True
         return False
-
+    
