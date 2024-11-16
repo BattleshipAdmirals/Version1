@@ -2,8 +2,23 @@ import math
 import random
 from IPython.display import clear_output
 import time
-import Battleship_MDP
 import numpy as np
+import Battleship_MDP as mdp
+    
+
+def Random_Agent(grids, turn, ships):
+    
+    def play_turn(grids, turn):
+        clear = 0
+        while clear ==0:
+            row = random_int(len(grids[turn])-1)
+            column = random_int(len(grids[turn][0])-1)
+            #print("trying: ", turn , row, column)
+            if grids[turn][row][column] == '.':
+                clear = 1
+        return row, column
+
+    return play_turn(grids, turn)
 
 def validate_size(size: int):
     side_length = int(math.sqrt(size))
@@ -119,8 +134,7 @@ def random_ship_placement(ship_size: int, grid: list, ships_dict: dict):
                     grid[row][column+i] = ship_size
                     ship_list.append([(row,column+i),1])
             else:
-                continue
-        
+                continue 
 
     ships_dict.append([ship_list, 1])
     return grid, ships_dict
@@ -141,30 +155,20 @@ def setup_game(grid_size: int, ships: list):
         
     return shot_grid1, shot_grid2, ship_grid1, ship_grid2, ships_dict1, ships_dict2
 
-def play_turn(grids, turn):
-    clear = 0
-    while clear ==0:
-        row = random_int(len(grids[turn])-1)
-        column = random_int(len(grids[turn][0])-1)
-        #print("trying: ", turn , row, column)
-        if grids[turn][row][column] == '.':
-            clear = 1
-    return row, column
-
-def play(grid_size, ships):
+def play(grid_size, ships, agents):
     grid1, grid2, grid3, grid4, dict1, dict2= setup_game(grid_size, ships)
     grids = [grid1,grid2,grid3,grid4]
     sunk = [dict1,dict2]
+
     hits_to_win = sum(ships)
     max_shots = grid_size*grid_size
     shots = [0, 0]
     hits = [0, 0]
     turn = 0
-    battleship_mdp = Battleship_MDP.Battleship_MDP(ships,1)
-    battleship_mdp.update_board(grids[0])
     while shots[0] < max_shots and shots[1] < max_shots and hits[0] < hits_to_win and hits[1] < hits_to_win:
         clear_output(wait=True)
-        current_shot = play_turn(grids, turn)
+        current_shot = agents[turn](grids, turn, ships)
+
         if grids[turn+2][current_shot[0]][current_shot[1]] == '.':
             grids[turn][current_shot[0]][current_shot[1]] = 'O'
         else:
@@ -183,20 +187,84 @@ def play(grid_size, ships):
                             sunk[turn][index1][1] = 0
                 if i[1] == 0:
                     for l in i[0]:
-                        grids[turn][l[0][0]][l[0][1]] = '*' 
+                        grids[turn][l[0][0]][l[0][1]] = '*'  
         shots[turn] = shots[turn] + 1
         if turn == 0:
             turn = 1
         else:
             turn = 0
-        battleship_mdp.update_board(grids[0])
-        heatmap = battleship_mdp.generate_heatmap()
-        guess = battleship_mdp.give_guess(heatmap)
-        print_grid(heatmap)
-        print(guess)
+
+        clear_output(wait=True)
         print_game(grids, shots, hits)
-        time.sleep(5)
+        if hits[0] >= hits_to_win:
+            print('Player 1 Wins!!!')
+            return np.array([1,0])
+        if hits[1] >= hits_to_win:
+            print('Player 2 Wins!!!')
+            return np.array([0,1])
+
+
+#Improved Random Agent?
+#If next to miss and not next to hit, skip
+def Improved_Random_Agent(grids, turn, ships):
+    
+    def play_turn(grids, turn):
+        clear = 0
+        long_search = 0
+        while clear == 0:
+            row = random_int(len(grids[turn])-1)
+            column = random_int(len(grids[turn][0])-1)
+            clear = check_neighbors(grids[turn], row, column)
+            long_search = long_search+1
+            if (long_search > 1000):
+                print('LONG SEARCH', turn, row, column)
+                time.sleep(5)
+        return row, column
+
+    def check_neighbors(grid, row, column):
+        row_len = len(grid)
+        column_len = len(grid[row])
+        
+        if grid[row][column] == '.':
+            if (row == 0 or (row > 0 and grid[row-1][column] != 'O')) \
+                or (row == row_len-1 or (row < row_len-1 and grid[row+1][column] != 'O')) \
+                or (column == 0 or (column > 0 and grid[row][column-1] != 'O')) \
+                or (column == column_len-1 or (column < column_len-1 and grid[row][column+1] != 'O')):
+                return 1
+        return 0
+
+    return play_turn(grids, turn)
+
+def MDP_Agent_strong(grids, turn, ships):
+    
+    mdp_agent = mdp.Battleship_MDP(ships, 1, 15)
+    
+    def play_turn(grids, turn):
+        mdp_agent.update_board(grids[turn])
+        return mdp_agent.give_guess()
+
+    return play_turn(grids, turn)
+
+def MDP_Agent_weak(grids, turn, ships):
+    
+    mdp_agent = mdp.Battleship_MDP(ships, 1, 5)
+    
+    def play_turn(grids, turn):
+        mdp_agent.update_board(grids[turn])
+        return mdp_agent.give_guess()
+
+    return play_turn(grids, turn)
+    
 grid_size = 10
 ships = [5, 4, 3, 3, 2]
+games = 50
 
-play(grid_size, ships)
+agent1=MDP_Agent_strong
+agent2=MDP_Agent_weak
+
+wins = np.array([0,0])
+while games > 0:
+    wins += play(grid_size, ships, agents=[agent1, agent2])
+    games = games - 1
+    
+print(wins)
