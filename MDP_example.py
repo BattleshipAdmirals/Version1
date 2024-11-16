@@ -3,6 +3,7 @@ import random
 from IPython.display import clear_output
 import time
 import Battleship_MDP
+import numpy as np
 
 def validate_size(size: int):
     side_length = int(math.sqrt(size))
@@ -189,8 +190,10 @@ def play(grid_size, ships):
         else:
             turn = 0
         battleship_mdp.update_board(grids[0])
-        dummy=battleship_mdp.give_dummy()
-        print_grid(dummy)
+        heatmap = battleship_mdp.generate_heatmap()
+        guess = battleship_mdp.give_guess(heatmap)
+        print_grid(heatmap)
+        print(guess)
         print_game(grids, shots, hits)
         time.sleep(5)
 grid_size = 10
