@@ -1,3 +1,5 @@
+# Deprecated, not used
+
 import random
 
 def vect_add(v1,v2):
