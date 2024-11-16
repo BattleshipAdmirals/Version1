@@ -29,10 +29,14 @@ def find_val(board,symbol): #return list of coordinates of the symbol
         return False
 
 def generate_blank(size):
-        a='.'
-        row = list(a * size)
-        grid = list(row*size)
-        return grid
+    a='.'
+    grid=[]
+    for i in range(size):
+        row=[]
+        for j in range(size):
+            row.append(a)
+        grid.append(row)
+    return grid
 
 def explore_dir(index_tile,direct,ship_tiles,goal_size,symbols,board):
         size = len(board)
@@ -63,4 +67,4 @@ def valid_tile(tile,size):
             if 0 <= tile[1] < size:
                 return True
         return False
-    
+
