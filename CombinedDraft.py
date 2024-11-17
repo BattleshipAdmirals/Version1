@@ -25,14 +25,15 @@ def validate_size(size: int):
     if side_length * side_length != size:
         raise ValueError("Size must create perfect square")
 
-def print_game(grids, shots, hits):
+def print_game(grids, shots, hits, hidden):
     print("                Battleship Admirals")
     print()
     print("        Player 1                  Player 2")
     print_dual_grids(grids[0], grids[1])
     print(f'   Shots: {shots[0]}   Hits: {hits[0]}        Shots: {shots[1]}   Hits: {hits[1]}')
     print()
-    print_dual_grids(grids[2], grids[3])
+    print_dual_grids(generate_hidden_grid(grids[0]) if hidden[0] == True else grids[2]
+                     , generate_hidden_grid(grids[1]) if hidden[1] == True else grids[3])
     
     print()
     
@@ -95,6 +96,22 @@ def grid_to_lists(grid: list):
         gridlists.append(colarray)
 
     return gridlists  
+
+def generate_hidden_grid(grid: list):
+    hidden_grid = []
+    for i in range(len(grid)):
+        rowarray = []
+        for j in range(len(grid[i])):
+            if grid[i][j] == '*':
+                rowarray.append('*')
+            elif grid[i][j] == 'O':
+                rowarray.append(' ')
+            elif grid[i][j] == 'X':
+                rowarray.append('X')
+            else:
+                rowarray.append('?')
+        hidden_grid.append(rowarray)
+    return hidden_grid
 
 def bitstring_to_int(bitstring: str):
     return int(bitstring,2)
@@ -173,7 +190,7 @@ def setup_game(grid_size: int, ships: list):
         
     return shot_grid1, shot_grid2, ship_grid1, ship_grid2, ships_dict1, ships_dict2
 
-def play(grid_size, ships, agents):
+def play(grid_size, ships, agents, hidden=(False, False)):
     grid1, grid2, grid3, grid4, dict1, dict2= setup_game(grid_size, ships)
     grids = [grid1,grid2,grid3,grid4]
     sunk = [dict1,dict2]
@@ -183,6 +200,8 @@ def play(grid_size, ships, agents):
     shots = [0, 0]
     hits = [0, 0]
     turn = 0
+    print_game(grids, shots, hits, hidden)
+    
     while shots[0] < max_shots and shots[1] < max_shots and hits[0] < hits_to_win and hits[1] < hits_to_win:
         clear_output(wait=True)
         current_shot = agents[turn](grids, turn, ships)
@@ -213,7 +232,7 @@ def play(grid_size, ships, agents):
             turn = 0
 
         clear_output(wait=True)
-        print_game(grids, shots, hits)
+        print_game(grids, shots, hits, hidden)
         if hits[0] >= hits_to_win:
             print('Player 1 Wins!!!')
             return np.array([1,0])
@@ -415,7 +434,7 @@ def Improved_Probablity_Agent(grids, turn, ships):
         return targets[target]
 
     return play_turn(grids, turn)
-	
+    
 def Improved_Seek_Probablity_Agent(grids, turn, ships):
     
     def play_turn(grids, turn):
@@ -491,8 +510,48 @@ def Improved_Seek_Probablity_Agent(grids, turn, ships):
         return targets[target]
 
     return play_turn(grids, turn)
-	
-	
+    
+def Human_Player(grids, turn, ships):
+
+    def play_turn(grids, turn):
+        valid = 0
+        row = -1
+        column = -1
+        while valid == 0:
+            move = input('Enter Valid Row and Column (ex. A9): ')
+            row, column = validate_move(grids[turn],move)
+            if row >= 0:
+                valid = 1
+
+        return row, column
+
+    def validate_move(grid, move):
+        row = -1
+        column = -1
+        try:
+            row_labels = list('ABCDEFGHIJKLMN')
+            row_value = move[:1].upper()
+            column_value = int(move[1:])
+
+            for i in range(len(grid)):
+                if row_value == row_labels[i] and column_value >= 0 and column_value < len(grid[0]):
+                    row = i
+                    column = column_value
+
+            if grid[row][column] != '.':
+                row = -1
+                column = -1
+                print('Duplicate Move, Please try again.')
+        except:
+            row = -1
+            column = -1
+            print('Invalid Input, Please try again.')
+            
+        return row, column
+            
+
+    return play_turn(grids, turn)
+    
 grid_size = 10
 ships = [5, 4, 3, 3, 2]
 games = 100
@@ -505,10 +564,11 @@ agent5=Improved_Seek_Probablity_Agent
 
 agent6=MDP_Agent_strong
 agent7=MDP_Agent_weak
+agent8=Human_Player
 
 wins = np.array([0,0])
 while games > 0:
-    wins += play(grid_size, ships, agents=[agent4, agent6])
+    wins += play(grid_size, ships, agents=[agent8, agent4], hidden=[True, False])
     games = games - 1
     #time.sleep(5)
     
